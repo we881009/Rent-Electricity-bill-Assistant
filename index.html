@@ -1,0 +1,277 @@
+﻿<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>租屋電費公平分攤計算器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600;700&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <button class="brand brand-link" id="homeBtn" type="button" aria-label="回到首頁">
+        <div class="logo">⚡</div>
+        <div>
+          <div class="title">租屋電費公平分攤</div>
+          <div class="subtitle">不用登入・算完可匯出明細</div>
+        </div>
+      </button>
+      <button class="btn ghost small" id="moreBtn">更多</button>
+    </header>
+
+    <div class="progress">
+      <div class="progress-steps">
+        <div class="dot" data-step="0">首頁</div>
+        <div class="dot" data-step="1">帳單</div>
+        <div class="dot" data-step="2">房間</div>
+        <div class="dot" data-step="3">公共</div>
+        <div class="dot" data-step="4">結果</div>
+      </div>
+      <div class="progress-bar"><div id="progressFill"></div></div>
+    </div>
+
+    <main>
+      <section id="step0" class="step active">
+        <div class="card stack">
+          <div class="card-title">快速開始</div>
+          <div class="field-note">不登入、不同步，打開就能算。輸入帳單與房間度數即可匯出。</div>
+          <div class="actions">
+            <button class="btn primary" id="startBtn">開始計算</button>
+            <button class="btn ghost" id="loadBtn">載入上次資料</button>
+          </div>
+        </div>
+        <div class="card stack">
+          <div class="card-title">台灣租屋電費新制重點</div>
+          <div class="field-note">以下為官方公告摘要，實際內容以正式公告為準。</div>
+          <ul class="policy-list">
+            <li><strong>生效日：</strong>2024/07/15（民國 113/07/15）。</li>
+            <li><strong>無獨立電表・按度計費：</strong>每度電費不得超過電費單當期每度平均電價。</li>
+            <li><strong>無獨立電表・非按度計費：</strong>每期電費總金額不得超過電費單每期電費總額。</li>
+            <li><strong>資訊透明：</strong>房東需提供電費資訊；房客完成申辦後可向台電查詢。</li>
+          </ul>
+          <div class="policy-meta">
+            <div>
+              資料來源：
+              <a href="https://www.vac.gov.tw/vac_home/bade/cp-2993-169700-204.html" target="_blank" rel="noopener">行政院消保處公告轉載（政府機關）</a>、
+              <a href="https://www.klcg.gov.tw/tw/publicworks/2313-288593.html" target="_blank" rel="noopener">地方政府公告（法規訊息）</a>
+            </div>
+            <div>來源版本日期：2024-07-15／2024-07-10｜本頁更新日期：2026-02-09</div>
+          </div>
+        </div>
+        <div class="card stack" id="historyCard">
+          <div class="card-header">
+            <div class="card-title">歷史紀錄</div>
+            <button class="btn ghost small" id="clearHistoryBtn" type="button">清除全部</button>
+          </div>
+          <div class="field-note">保存完整明細，點選即可展開查看。歷史紀錄只會儲存在本機瀏覽器，不會與他人共用。</div>
+          <div id="historyList" class="history-list"></div>
+          <div id="historyEmpty" class="field-note">尚無紀錄</div>
+        </div>
+        <div class="card stack">
+          <div class="card-title">許願 / 回饋</div>
+          <div class="field-note">把你的想法寫下來，複製後可貼到 LINE 或 Email。</div>
+          <div class="field">
+            <label for="feedbackText">想法或期許（可留功能需求、問題、使用心得）</label>
+            <textarea id="feedbackText" rows="4" placeholder="例如：希望可以加入台電級距拆段、公電費透明化、或自動辨識帳單…"></textarea>
+          </div>
+          <div class="actions">
+            <button class="btn secondary" id="copyFeedbackBtn" type="button">複製回饋</button>
+            <button class="btn ghost" id="clearFeedbackBtn" type="button">清空內容</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="step1" class="step">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Step 1｜輸入帳單</div>
+          </div>
+          <div class="stack">
+            <div class="field">
+              <label for="periodSelect">帳期（可選）</label>
+              <select id="periodSelect"><option value="">不指定</option></select>
+            </div>
+            <div class="field">
+              <label for="totalKwh">台電總用電度數（必填）</label>
+              <input id="totalKwh" type="number" inputmode="numeric" min="1" step="1" placeholder="例如：2000" />
+              <div class="field-note">度</div>
+            </div>
+            <div class="field">
+              <label for="billAmount">台電帳單總金額（必填）</label>
+              <input id="billAmount" type="number" inputmode="numeric" min="1" step="1" placeholder="例如：6400" />
+              <div class="field-note">元</div>
+            </div>
+            <div class="summary-strip">
+              <div>平均每度電價：<strong id="avgPrice">--</strong> 元/度</div>
+              <div class="inline">
+                <button class="btn ghost small" id="toggleAvg">顯示 4 位</button>
+                <span id="avgPriceDetail" class="field-note"></span>
+              </div>
+            </div>
+            <div id="step1Error" class="notice error hidden"></div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="toStep2">下一步</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="step2" class="step">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Step 2｜輸入房間用電</div>
+          </div>
+          <div class="stack">
+            <div class="inline">
+              <div class="field-note">房間數</div>
+              <button class="btn ghost small" id="roomMinus">-</button>
+              <strong id="roomCount">1</strong>
+              <button class="btn ghost small" id="roomPlus">+</button>
+              <span class="field-note">（最少 1、最多 20）</span>
+            </div>
+            <div class="field-note">房號格式</div>
+            <div class="chip-group label-group">
+              <button class="chip label-chip" type="button" data-label="alpha">
+                <div class="chip-title">A/B/C</div>
+                <div class="chip-desc">以英文字母作為房號</div>
+              </button>
+              <button class="chip label-chip" type="button" data-label="numeric">
+                <div class="chip-title">1/2/3</div>
+                <div class="chip-desc">以數字作為房號</div>
+              </button>
+              <button class="chip label-chip" type="button" data-label="custom">
+                <div class="chip-title">自訂</div>
+                <div class="chip-desc">可輸入房客名字或房名</div>
+              </button>
+            </div>
+            <div id="roomsContainer" class="room-grid"></div>
+            <div class="summary-strip">
+              <div>房間度數加總：<strong id="sumRoomKwh">0</strong> 度</div>
+              <div>與台電總度數差額：<strong id="deltaKwh">0</strong> 度</div>
+            </div>
+            <div id="step2Warning" class="notice warn hidden"></div>
+            <div id="step2Error" class="notice error hidden"></div>
+          </div>
+          <div class="actions">
+            <button class="btn ghost" id="backTo1">返回</button>
+            <button class="btn primary" id="toStep3">下一步</button>
+            <div id="step2Blocker" class="notice error hidden">房間度數加總已超過台電總度數，請修正後再下一步。</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="step3" class="step">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Step 3｜公共用電與分攤</div>
+          </div>
+          <div class="stack">
+            <div class="card">
+              <div class="card-title">公共用電度數</div>
+              <div class="inline">
+                <label class="toggle">
+                  <span>使用手動公共用電度數</span>
+                  <input type="checkbox" id="manualSharedToggle" />
+                </label>
+              </div>
+              <div class="field" id="manualSharedField">
+                <label for="sharedKwh">手動輸入公共用電度數</label>
+                <input id="sharedKwh" type="number" inputmode="numeric" min="0" step="1" placeholder="例如：500" />
+                <div class="field-note">度</div>
+              </div>
+              <div class="summary-strip">
+                <div>自動計算公共用電：<strong id="autoSharedKwh">0</strong> 度</div>
+                <div id="sharedCheck" class="field-note"></div>
+              </div>
+              <div id="sharedWarning" class="notice error hidden"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">公共費用分攤方式</div>
+              <div class="chip-group">
+                <button class="chip" data-method="landlord" type="button">
+                  <div class="chip-title">房東吸收</div>
+                  <div class="chip-desc">公電費用由房東吸收，房客只付房間用電。</div>
+                </button>
+                <button class="chip" data-method="equal" type="button">
+                  <div class="chip-title">平均分攤</div>
+                  <div class="chip-desc">公共電費平均分攤給每一間房。</div>
+                </button>
+                <button class="chip" data-method="proportional" type="button">
+                  <div class="chip-title">按用電比例分攤</div>
+                  <div class="chip-desc">公共電費依各房用電比例分攤，用電越多分攤越多。</div>
+                </button>
+              </div>
+              <div id="allocationError" class="notice error hidden"></div>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn ghost" id="backTo2">返回</button>
+            <button class="btn primary" id="toStep4">計算結果</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="step4" class="step">
+        <div class="card stack">
+          <div class="card-header">
+            <div class="card-title">Step 4｜結果與匯出</div>
+          </div>
+          <div id="resultContent" class="export-area">
+            <div class="summary-strip">
+              <div><strong>帳期：</strong><span id="summaryPeriod">--</span></div>
+              <div><strong>台電總度數：</strong><span id="summaryTotalKwh">0</span> 度</div>
+              <div><strong>台電總金額：</strong><span id="summaryBillAmount">0</span> 元</div>
+              <div><strong>平均每度：</strong><span id="summaryAvg">--</span> 元/度</div>
+              <div><strong>公共用電：</strong><span id="summarySharedKwh">0</span> 度</div>
+              <div><strong>分攤方式：</strong><span id="summaryAllocation">--</span></div>
+            </div>
+            <div id="validationBox" class="notice ok"></div>
+            <div id="resultNote" class="field-note"></div>
+            <div class="divider"></div>
+            <div id="roomResults" class="result-grid"></div>
+            <div id="exportMeta" class="export-meta"></div>
+          </div>
+          <div class="actions">
+            <button class="btn ghost" id="backTo3">返回</button>
+            <button class="btn secondary" id="copyTextBtn">複製明細</button>
+            <button class="btn primary" id="exportImgBtn">匯出圖片</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="card-title">設定 / 更多</div>
+      <div class="stack" style="margin-top: 12px;">
+        <label class="toggle">
+          <span>文字明細顯示公共分攤金額</span>
+          <input type="checkbox" id="includeSharedNote" />
+        </label>
+        <label class="toggle">
+          <span>匯出圖片包含日期</span>
+          <input type="checkbox" id="exportIncludeDate" />
+        </label>
+        <label class="toggle">
+          <span>匯出圖片包含頁面網址</span>
+          <input type="checkbox" id="exportIncludeUrl" />
+        </label>
+        <button class="btn ghost" id="clearDataBtn">清除資料</button>
+      </div>
+      <div class="actions" style="margin-top: 12px;">
+        <button class="btn primary" id="closeModal">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">已完成</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
